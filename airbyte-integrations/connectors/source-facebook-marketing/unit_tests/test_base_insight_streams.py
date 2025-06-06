@@ -108,6 +108,19 @@ class TestBaseInsightsStream:
 
         assert stream.request_params()["filtering"] == [{"field": "ad.effective_status", "operator": "IN", "value": ["ACTIVE", "ARCHIVED"]}]
 
+    def test_request_params_all_days(self, api, some_config):
+        stream = AdsInsights(
+            api=api,
+            account_ids=some_config["account_ids"],
+            start_date=datetime(2010, 1, 1),
+            end_date=datetime(2011, 1, 1),
+            insights_lookback_window=28,
+            time_increment="all_days",
+        )
+
+        params = stream.request_params()
+        assert "time_increment" not in params
+
     def test_read_records_all(self, mocker, api, some_config):
         """1. yield all from mock
         2. if read slice 2, 3 state not changed
@@ -391,6 +404,30 @@ class TestBaseInsightsStream:
         assert len(generated_jobs) == (end_date.date() - start_date).days + 1
         assert generated_jobs[0].interval.start == start_date.date()
         assert generated_jobs[1].interval.start == start_date.date() + duration(days=1)
+
+    def test_stream_slices_all_days(self, api, async_manager_mock, start_date, some_config):
+        end_date = start_date + duration(days=10)
+        stream = AdsInsights(
+            api=api,
+            account_ids=some_config["account_ids"],
+            start_date=start_date,
+            end_date=end_date,
+            insights_lookback_window=28,
+            time_increment="all_days",
+        )
+        async_manager_mock.completed_jobs.return_value = [1]
+
+        slices = list(stream.stream_slices(stream_state=None, sync_mode=SyncMode.incremental))
+
+        assert slices == [
+            {"account_id": "unknown_account", "insight_job": 1},
+        ]
+        async_manager_mock.assert_called_once()
+        args, kwargs = async_manager_mock.call_args
+        generated_jobs = list(kwargs["jobs"])
+        assert len(generated_jobs) == 1
+        assert generated_jobs[0].interval.start == start_date.date()
+        assert generated_jobs[0].interval.end == end_date.date()
 
     def test_stream_slices_with_state_close_to_now(self, api, async_manager_mock, recent_start_date, some_config):
         """Stream will use start_date when close to now and start_date close to now"""

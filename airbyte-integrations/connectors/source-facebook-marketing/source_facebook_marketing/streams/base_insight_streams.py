@@ -232,6 +232,10 @@ class AdsInsights(FBMarketingIncrementalStream):
         """Get date period to sync"""
         if self._end_date < self._next_cursor_values[account_id]:
             return
+        if self.time_increment == "all_days":
+            # the entire date range should be retrieved in a single slice
+            yield self._next_cursor_values[account_id]
+            return
         date_range = self._end_date - self._next_cursor_values[account_id]
         yield from date_range.range("days", self.time_increment)
 
@@ -261,7 +265,10 @@ class AdsInsights(FBMarketingIncrementalStream):
                 and ts_start < self._next_cursor_values.get(account_id, self._start_date) - self.insights_lookback_period
             ):
                 continue
-            ts_end = ts_start + pendulum.duration(days=self.time_increment - 1)
+            if self.time_increment == "all_days":
+                ts_end = self._end_date
+            else:
+                ts_end = ts_start + pendulum.duration(days=self.time_increment - 1)
             interval = pendulum.Period(ts_start, ts_end)
             yield InsightAsyncJob(
                 api=self._api.api,
@@ -368,9 +375,10 @@ class AdsInsights(FBMarketingIncrementalStream):
             "action_report_time": self.action_report_time,
             "breakdowns": self.breakdowns,
             "fields": self.fields(),
-            "time_increment": self.time_increment,
             "action_attribution_windows": self.action_attribution_windows,
         }
+        if self.time_increment != "all_days":
+            req_params["time_increment"] = self.time_increment
         req_params.update(self._filter_all_statuses())
         return req_params
 
