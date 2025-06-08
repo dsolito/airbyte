@@ -76,28 +76,7 @@ class ServiceAccountCredentials(BaseModel):
     )
 
 
-class DayIncrement(BaseModel):
-    class Config(OneOfOptionConfig):
-        title = "Day Increment"
-        description = "Aggregate statistics by specific day intervals"
-        discriminator = "increment_type"
-
-    increment_type: Literal["days"] = Field("days", const=True)
-    value: PositiveInt = Field(
-        title="Number of Days",
-        description="Time window in days by which to aggregate statistics",
-        minimum=1,
-        maximum=89,
-    )
-
-
-class AllDaysIncrement(BaseModel):
-    class Config(OneOfOptionConfig):
-        title = "All Days"
-        description = "Aggregate statistics over the entire date range"
-        discriminator = "increment_type"
-
-    increment_type: Literal["all_days"] = Field("all_days", const=True)
+# We're using a simple string field to avoid complex nested types that cause UI issues
 
 
 class InsightConfig(BaseModel):
@@ -109,6 +88,7 @@ class InsightConfig(BaseModel):
     name: str = Field(
         title="Name",
         description="The name value of insight",
+        order=0,
     )
 
     level: str = Field(
@@ -116,24 +96,28 @@ class InsightConfig(BaseModel):
         description="Chosen level for API",
         default="ad",
         enum=["ad", "adset", "campaign", "account"],
+        order=1,
     )
 
     fields: Optional[List[ValidFields]] = Field(
         title="Fields",
         description="A list of chosen fields for fields parameter",
         default=[],
+        order=2,
     )
 
     breakdowns: Optional[List[ValidBreakdowns]] = Field(
         title="Breakdowns",
         description="A list of chosen breakdowns for breakdowns",
         default=[],
+        order=3,
     )
 
     action_breakdowns: Optional[List[ValidActionBreakdowns]] = Field(
         title="Action Breakdowns",
         description="A list of chosen action_breakdowns for action_breakdowns",
         default=[],
+        order=4,
     )
 
     action_report_time: str = Field(
@@ -145,16 +129,40 @@ class InsightConfig(BaseModel):
         ),
         default="mixed",
         enum=["conversion", "impression", "mixed"],
+        order=5,
     )
 
-    time_increment: Optional[Union[DayIncrement, AllDaysIncrement]] = Field(
+    time_increment: dict = Field(
         title="Time Increment",
-        description=(
-            "Time window by which to aggregate statistics. The sync will be chunked into N day intervals, where N is the number of days you specified. "
-            "For example, if you set this value to 7, then all statistics will be reported as 7-day aggregates by starting from the start_date. If the start and end dates are October 1st and October 30th, then the connector will output 5 records: 01 - 06, 07 - 13, 14 - 20, 21 - 27, and 28 - 30 (3 days only). "
-            'The minimum allowed value for this field is 1, and the maximum is 89. Use "All Days" to aggregate over the entire date range.'
-        ),
-        default={"increment_type": "all_days"}
+        description="Select how to aggregate statistics for your Facebook ads data",
+        order=6,
+        oneOf=[
+            {
+                "title": "All Days",
+                "required": ["option_title"],
+                "properties": {
+                    "option_title": {"type": "string", "const": "All Days"}
+                },
+                "additionalProperties": False
+            },
+            {
+                "title": "Interval",
+                "required": ["option_title", "value"],
+                "properties": {
+                    "option_title": {"type": "string", "const": "Interval"},
+                    "value": {
+                        "type": "integer",
+                        "title": "Number of Days",
+                        "description": "Time window in days by which to aggregate statistics (1-89)",
+                        "minimum": 1,
+                        "maximum": 89,
+                        "default": 1
+                    }
+                },
+                "additionalProperties": False
+            }
+        ],
+        default={"option_title": "All Days"},
     )
 
     start_date: Optional[datetime] = Field(
@@ -162,6 +170,7 @@ class InsightConfig(BaseModel):
         description="The date from which you'd like to replicate data for this stream, in the format YYYY-MM-DDT00:00:00Z.",
         pattern=DATE_TIME_PATTERN,
         examples=["2017-01-25T00:00:00Z"],
+        order=8,
     )
 
     end_date: Optional[datetime] = Field(
@@ -173,6 +182,7 @@ class InsightConfig(BaseModel):
         ),
         pattern=DATE_TIME_PATTERN,
         examples=["2017-01-26T00:00:00Z"],
+        order=9,
     )
     insights_lookback_window: Optional[PositiveInt] = Field(
         title="Custom Insights Lookback Window",
@@ -180,6 +190,7 @@ class InsightConfig(BaseModel):
         maximum=28,
         mininum=1,
         default=28,
+        order=10,
     )
     insights_job_timeout: Optional[PositiveInt] = Field(
         title="Custom Insights Job Timeout",
@@ -187,6 +198,7 @@ class InsightConfig(BaseModel):
         maximum=60,
         mininum=10,
         default=60,
+        order=11,
     )
 
 
@@ -197,7 +209,7 @@ class ConnectorConfig(BaseConfig):
         title = "Source Facebook Marketing"
         use_enum_values = True
 
-    account_ids: Set[constr(regex="^[0-9]+$")] = Field(
+    account_ids: Set[str] = Field(
         title="Ad Account ID(s)",
         order=0,
         description=(

@@ -67,24 +67,44 @@ class AdsInsights(FBMarketingIncrementalStream):
 
     def _parse_time_increment(self, time_increment):
         """
-        Accepts the new time_increment object (DayIncrement or AllDaysIncrement) and returns the correct value.
+        Parse the time_increment value from the oneOf schema format.
         Returns an int for days, or 'all_days' for all days.
         """
         if time_increment is None:
-            return 1  # default fallback
-        # Handle both dict (raw config) and pydantic model
-        if hasattr(time_increment, 'increment_type'):
-            if time_increment.increment_type == 'days':
-                return time_increment.value
-            elif time_increment.increment_type == 'all_days':
-                return 'all_days'
-        elif isinstance(time_increment, dict):
-            if time_increment.get('increment_type') == 'days':
-                return time_increment.get('value', 1)
-            elif time_increment.get('increment_type') == 'all_days':
-                return 'all_days'
-        # fallback
-        return time_increment
+            return "all_days"  # default fallback
+        
+        # Handle the oneOf dropdown format 
+        if isinstance(time_increment, dict):
+            # Check for new oneOf format with option_title
+            option_title = time_increment.get("option_title")
+            if option_title == "All Days":
+                return "all_days"
+            elif option_title == "Daily Increment":
+                value = time_increment.get("value")
+                if isinstance(value, int) and value >= 1:
+                    return value
+                return 1
+            
+            # Backwards compatibility - legacy formats
+            if "value" in time_increment:
+                return time_increment.get("value", 1)
+            if time_increment.get("increment_type") == "all_days":
+                return "all_days"
+        
+        # Handle direct string or int values for backward compatibility
+        if isinstance(time_increment, str):
+            if time_increment == "all_days":
+                return "all_days"
+            try:
+                return int(time_increment)
+            except ValueError:
+                return 1
+                
+        if isinstance(time_increment, int):
+            return time_increment
+        
+        # Final fallback, default to all_days
+        return "all_days"
 
     def __init__(
         self,

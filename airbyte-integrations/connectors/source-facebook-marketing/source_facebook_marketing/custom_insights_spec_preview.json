@@ -1,0 +1,125 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Custom Insights Spec Preview",
+  "type": "object",
+  "required": ["name"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "title": "Name",
+      "order": 0
+    },
+    "level": {
+      "type": "string",
+      "title": "Level",
+      "description": "Chosen level for API",
+      "enum": ["ad", "adset", "campaign", "account"],
+      "default": "ad",
+      "order": 1
+    },
+    "fields": {
+      "type": "array",
+      "title": "Fields",
+      "description": "A list of chosen fields for fields parameter",
+      "items": {"type": "string"},
+      "default": [],
+      "order": 2
+    },
+    "breakdowns": {
+      "type": "array",
+      "title": "Breakdowns",
+      "description": "A list of chosen breakdowns for breakdowns",
+      "items": {"type": "string"},
+      "default": [],
+      "order": 3
+    },
+    "action_breakdowns": {
+      "type": "array",
+      "title": "Action Breakdowns",
+      "description": "A list of chosen action_breakdowns for action_breakdowns",
+      "items": {"type": "string"},
+      "default": [],
+      "order": 4
+    },
+    "action_report_time": {
+      "type": "string",
+      "title": "Action Report Time",
+      "description": "Determines the report time of action stats.",
+      "enum": ["conversion", "impression", "mixed"],
+      "default": "mixed",
+      "order": 5
+    },
+    "time_increment": {
+      "title": "Time Increment",
+      "description": "Select how to aggregate statistics for your Facebook ads data",
+      "type": "object",
+      "display_type": "dropdown",
+      "oneOf": [
+        {
+          "title": "All Days",
+          "required": ["option_title"],
+          "properties": {
+            "option_title": {
+              "type": "string",
+              "const": "All Days"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "title": "Interval",
+          "required": ["option_title", "value"],
+          "properties": {
+            "option_title": {
+              "type": "string",
+              "const": "Interval"
+            },
+            "value": {
+              "type": "integer",
+              "title": "Number of Days",
+              "description": "Time window in days by which to aggregate statistics (1-89)",
+              "minimum": 1,
+              "maximum": 89,
+              "default": 1
+            }
+          },
+          "additionalProperties": false
+        }
+      ],
+      "default": {"option_title": "All Days"},
+      "order": 6
+    },
+    "start_date": {
+      "type": "string",
+      "title": "Start Date",
+      "description": "The date from which you'd like to replicate data for this stream, in the format YYYY-MM-DDT00:00:00Z.",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+      "order": 8
+    },
+    "end_date": {
+      "type": "string",
+      "title": "End Date",
+      "description": "The date until which you'd like to replicate data for this stream, in the format YYYY-MM-DDT00:00:00Z.",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+      "order": 9
+    },
+    "insights_lookback_window": {
+      "type": "integer",
+      "title": "Custom Insights Lookback Window",
+      "description": "The attribution window",
+      "minimum": 1,
+      "maximum": 28,
+      "default": 28,
+      "order": 10
+    },
+    "insights_job_timeout": {
+      "type": "integer",
+      "title": "Custom Insights Job Timeout",
+      "description": "The insights job timeout",
+      "minimum": 10,
+      "maximum": 60,
+      "default": 60,
+      "order": 11
+    }
+  }
+}
