@@ -77,6 +77,8 @@ class AdsInsights(FBMarketingIncrementalStream):
         insights_lookback_window: int = None,
         insights_job_timeout: int = 60,
         level: str = "ad",
+        cursor_field: Optional[str] = None,
+        primary_key: Optional[List[str]] = None,
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -98,6 +100,9 @@ class AdsInsights(FBMarketingIncrementalStream):
         self._insights_job_timeout = insights_job_timeout
         self.level = level
         self.entity_prefix = level
+        if cursor_field:
+            self.cursor_field = cursor_field
+        self._primary_key_override = primary_key
 
         # state
         self._cursor_values: Optional[Mapping[str, pendulum.Date]] = None  # latest period that was read for each account
@@ -113,6 +118,8 @@ class AdsInsights(FBMarketingIncrementalStream):
     @property
     def primary_key(self) -> Optional[Union[str, List[str], List[List[str]]]]:
         """Build complex PK based on slices and breakdowns"""
+        if self._primary_key_override:
+            return self._primary_key_override
 
         breakdowns_pks = []
 
