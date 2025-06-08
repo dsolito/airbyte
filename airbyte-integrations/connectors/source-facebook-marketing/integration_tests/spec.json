@@ -500,6 +500,19 @@
               "mininum": 10,
               "exclusiveMinimum": 0,
               "type": "integer"
+            },
+            "cursor_field": {
+              "title": "Cursor Field",
+              "description": "Field to use as the cursor for incremental sync",
+              "default": "date_start",
+              "type": "string"
+            },
+            "primary_key": {
+              "title": "Primary Key Fields",
+              "description": "Fields that uniquely identify records for this insight stream",
+              "default": [],
+              "type": "array",
+              "items": {"type": "string"}
             }
           },
           "required": ["name"]

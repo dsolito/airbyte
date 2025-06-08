@@ -318,6 +318,8 @@ class SourceFacebookMarketing(AbstractSource):
                 insights_lookback_window=insight.insights_lookback_window or config.insights_lookback_window,
                 insights_job_timeout=insight.insights_job_timeout or config.insights_job_timeout,
                 level=insight.level,
+                cursor_field=insight.cursor_field,
+                primary_key=list(insight.primary_key) if insight.primary_key else None,
             )
             streams.append(stream)
         return streams

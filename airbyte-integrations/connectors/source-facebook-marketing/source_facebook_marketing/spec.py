@@ -167,6 +167,18 @@ class InsightConfig(BaseModel):
         default=60,
     )
 
+    cursor_field: Optional[ValidFields] = Field(
+        title="Cursor Field",
+        description="Field to use as the cursor for incremental sync",
+        default="date_start",
+    )
+
+    primary_key: Optional[List[ValidFields]] = Field(
+        title="Primary Key Fields",
+        description="Fields that uniquely identify records for this insight stream",
+        default=[],
+    )
+
 
 class ConnectorConfig(BaseConfig):
     """Connector config"""
