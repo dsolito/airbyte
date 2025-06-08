@@ -65,6 +65,27 @@ class AdsInsights(FBMarketingIncrementalStream):
 
     status_field = "effective_status"
 
+    def _parse_time_increment(self, time_increment):
+        """
+        Accepts the new time_increment object (DayIncrement or AllDaysIncrement) and returns the correct value.
+        Returns an int for days, or 'all_days' for all days.
+        """
+        if time_increment is None:
+            return 1  # default fallback
+        # Handle both dict (raw config) and pydantic model
+        if hasattr(time_increment, 'increment_type'):
+            if time_increment.increment_type == 'days':
+                return time_increment.value
+            elif time_increment.increment_type == 'all_days':
+                return 'all_days'
+        elif isinstance(time_increment, dict):
+            if time_increment.get('increment_type') == 'days':
+                return time_increment.get('value', 1)
+            elif time_increment.get('increment_type') == 'all_days':
+                return 'all_days'
+        # fallback
+        return time_increment
+
     def __init__(
         self,
         name: str = None,
@@ -91,7 +112,7 @@ class AdsInsights(FBMarketingIncrementalStream):
                 self.action_breakdowns = action_breakdowns
         if breakdowns is not None:
             self.breakdowns = breakdowns
-        self.time_increment = time_increment or self.time_increment
+        self.time_increment = self._parse_time_increment(time_increment)  # <-- updated
         self.action_report_time = action_report_time
         self._new_class_name = name
         self._insights_lookback_window = insights_lookback_window

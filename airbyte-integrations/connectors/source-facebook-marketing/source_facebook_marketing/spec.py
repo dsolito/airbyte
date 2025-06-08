@@ -76,6 +76,30 @@ class ServiceAccountCredentials(BaseModel):
     )
 
 
+class DayIncrement(BaseModel):
+    class Config(OneOfOptionConfig):
+        title = "Day Increment"
+        description = "Aggregate statistics by specific day intervals"
+        discriminator = "increment_type"
+
+    increment_type: Literal["days"] = Field("days", const=True)
+    value: PositiveInt = Field(
+        title="Number of Days",
+        description="Time window in days by which to aggregate statistics",
+        minimum=1,
+        maximum=89,
+    )
+
+
+class AllDaysIncrement(BaseModel):
+    class Config(OneOfOptionConfig):
+        title = "All Days"
+        description = "Aggregate statistics over the entire date range"
+        discriminator = "increment_type"
+
+    increment_type: Literal["all_days"] = Field("all_days", const=True)
+
+
 class InsightConfig(BaseModel):
     """Config for custom insights"""
 
@@ -123,16 +147,14 @@ class InsightConfig(BaseModel):
         enum=["conversion", "impression", "mixed"],
     )
 
-    time_increment: Optional[Union[PositiveInt, Literal["all_days"]]] = Field(
+    time_increment: Optional[Union[DayIncrement, AllDaysIncrement]] = Field(
         title="Time Increment",
         description=(
-            "Time window in days by which to aggregate statistics. The sync will be chunked into N day intervals, where N is the number of days you specified. "
+            "Time window by which to aggregate statistics. The sync will be chunked into N day intervals, where N is the number of days you specified. "
             "For example, if you set this value to 7, then all statistics will be reported as 7-day aggregates by starting from the start_date. If the start and end dates are October 1st and October 30th, then the connector will output 5 records: 01 - 06, 07 - 13, 14 - 20, 21 - 27, and 28 - 30 (3 days only). "
-            'The minimum allowed value for this field is 1, and the maximum is 89. Use "all_days" to aggregate over the entire date range.'
+            'The minimum allowed value for this field is 1, and the maximum is 89. Use "All Days" to aggregate over the entire date range.'
         ),
-        maximum=89,
-        minimum=1,
-        default="all_days",
+        default={"increment_type": "all_days"}
     )
 
     start_date: Optional[datetime] = Field(
